@@ -1,0 +1,14 @@
+FROM python:3.13-slim
+
+WORKDIR /app
+
+COPY python-ml/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY python-ml/ .
+
+RUN mkdir -p models visualizations
+
+EXPOSE 8000
+
+ENTRYPOINT ["python", "main.py"]

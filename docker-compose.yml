@@ -1,0 +1,33 @@
+services:
+  ids-pcap:
+    build:
+      context: .
+      dockerfile: Dockerfile.go
+    container_name: ids-pcap
+    network_mode: "host"
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - ./data:/data
+      - ./output:/output
+    command: ["--mode", "file", "--file", "/data/traffic.pcap", "--output", "/output/features.json"]
+
+  ids-ml:
+    build:
+      context: .
+      dockerfile: Dockerfile.python
+    container_name: ids-ml
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./output:/app/output
+      - ./models:/app/models
+      - ./visualizations:/app/visualizations
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
+    command: ["api", "--host", "0.0.0.0", "--port", "8000"]
+    depends_on:
+      - ids-pcap
