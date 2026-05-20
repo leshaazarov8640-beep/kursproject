@@ -28,6 +28,7 @@ models/
 *.joblib
 
 visualizations/
+verify_results/
 
 *.log
 /output/
