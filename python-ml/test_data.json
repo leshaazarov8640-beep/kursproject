@@ -1,0 +1,4 @@
+[
+  {"src_ip":"10.0.0.1","dst_ip":"192.168.1.1","src_port":12345,"dst_port":80,"protocol":"TCP","packet_count":25,"total_bytes":3200,"mean_packet_size":350,"std_packet_size":45,"min_packet_size":40,"max_packet_size":1400,"flow_duration_sec":28.0,"mean_inter_arrival_time":0.75,"std_inter_arrival_time":0.45,"syn_count":2,"ack_count":18,"fin_count":2,"rst_count":0,"psh_count":8,"urg_count":0,"mean_ttl":120,"mean_window_size":65000,"payload_bytes_total":2100},
+  {"src_ip":"10.0.0.100","dst_ip":"192.168.1.1","src_port":31337,"dst_port":80,"protocol":"TCP","packet_count":850,"total_bytes":55000,"mean_packet_size":60,"std_packet_size":5,"min_packet_size":40,"max_packet_size":80,"flow_duration_sec":1.5,"mean_inter_arrival_time":0.001,"std_inter_arrival_time":0.0005,"syn_count":750,"ack_count":3,"fin_count":0,"rst_count":0,"psh_count":0,"urg_count":0,"mean_ttl":64,"mean_window_size":1024,"payload_bytes_total":50}
+]

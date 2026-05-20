@@ -1,0 +1,90 @@
+[
+  {
+    "id": 1,
+    "timestamp": "2026-05-20T21:20:42.767633",
+    "input": [
+      {
+        "packet_count": 850,
+        "syn_count": 750,
+        "total_bytes": 55000,
+        "mean_packet_size": 60,
+        "std_packet_size": 5,
+        "min_packet_size": 40,
+        "max_packet_size": 80,
+        "flow_duration_sec": 1.5,
+        "mean_inter_arrival_time": 0.001,
+        "std_inter_arrival_time": 0.0005,
+        "ack_count": 3,
+        "fin_count": 0,
+        "rst_count": 0,
+        "psh_count": 0,
+        "urg_count": 0,
+        "mean_ttl": 64,
+        "mean_window_size": 1024,
+        "payload_bytes_total": 50,
+        "protocol_encoded": 0
+      }
+    ],
+    "result": {
+      "total_flows": 1,
+      "anomaly_count": 1,
+      "normal_count": 0,
+      "results": [
+        {
+          "index": 0,
+          "is_anomaly": true,
+          "anomaly_score": 0.7888447589286514,
+          "rf_prediction": 1,
+          "mlp_prediction": 1,
+          "iso_forest_prediction": 0,
+          "rf_confidence": 1.0,
+          "mlp_confidence": 0.5776895178573026
+        }
+      ]
+    }
+  },
+  {
+    "id": 2,
+    "timestamp": "2026-05-20T21:28:17.826587",
+    "input": [
+      {
+        "packet_count": 850,
+        "syn_count": 750,
+        "total_bytes": 55000,
+        "mean_packet_size": 60,
+        "std_packet_size": 5,
+        "min_packet_size": 40,
+        "max_packet_size": 80,
+        "flow_duration_sec": 1.5,
+        "mean_inter_arrival_time": 0.001,
+        "std_inter_arrival_time": 0.0005,
+        "ack_count": 3,
+        "fin_count": 0,
+        "rst_count": 0,
+        "psh_count": 0,
+        "urg_count": 0,
+        "mean_ttl": 64,
+        "mean_window_size": 1024,
+        "payload_bytes_total": 50,
+        "protocol_encoded": 0
+      }
+    ],
+    "result": {
+      "total_flows": 1,
+      "anomaly_count": 1,
+      "normal_count": 0,
+      "results": [
+        {
+          "index": 0,
+          "is_anomaly": true,
+          "anomaly_score": 0.7888447589286514,
+          "rf_prediction": 1,
+          "mlp_prediction": 1,
+          "iso_forest_prediction": 0,
+          "rf_confidence": 1.0,
+          "mlp_confidence": 0.5776895178573026
+        }
+      ]
+    }
+  }
+]

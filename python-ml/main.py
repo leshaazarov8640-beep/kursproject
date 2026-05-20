@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 import sys
 
 from features.parser import load_flows_from_json, load_flows_from_stdin, prepare_features
@@ -228,6 +229,8 @@ def cmd_api(args):
 
 def main():
     parser = argparse.ArgumentParser(description="IDS - Intrusion Detection System")
+    parser.add_argument("--telegram-token", help="Telegram bot token for alerts")
+    parser.add_argument("--slack-webhook", help="Slack webhook URL for alerts")
     subparsers = parser.add_subparsers(dest="command")
 
     train_parser = subparsers.add_parser("train", help="Train ML models")
@@ -249,6 +252,10 @@ def main():
     api_parser.add_argument("--model-dir", default="models")
 
     args = parser.parse_args()
+    if args.telegram_token:
+        os.environ["TELEGRAM_BOT_TOKEN"] = args.telegram_token
+    if args.slack_webhook:
+        os.environ["SLACK_WEBHOOK_URL"] = args.slack_webhook
     if args.command == "train":
         cmd_train(args)
     elif args.command == "predict":
