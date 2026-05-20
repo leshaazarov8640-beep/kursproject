@@ -40,12 +40,13 @@ def main():
     rf, mlp, iso, scaler = train_models(X, y, model_dir="models")
     print("      Модели сохранены в папке models/")
 
-    # 2. Тестовые данные с разными типами трафика
-    print("\n[3/4] Проверка на 6 тестовых потоках...")
+    # 2. Тестовые данные — 10 потоков (6 норма, 4 атаки)
+    print("\n[3/4] Проверка на 10 тестовых потоках...")
 
     test_flows = [
+        # ===== НОРМАЛЬНЫЙ ТРАФИК (6 потоков) =====
         {
-            "name": "HTTP (норма)",
+            "name": "1. HTTP (веб-сёрфинг)",
             "src_ip": "10.0.0.1", "dst_ip": "192.168.1.1",
             "src_port": 12345, "dst_port": 80, "protocol": "TCP",
             "packet_count": 25, "total_bytes": 3200, "mean_packet_size": 350,
@@ -56,7 +57,18 @@ def main():
             "mean_ttl": 120, "mean_window_size": 65000, "payload_bytes_total": 2100,
         },
         {
-            "name": "SSH (норма)",
+            "name": "2. HTTPS (защищённый сайт)",
+            "src_ip": "10.0.0.4", "dst_ip": "192.168.1.1",
+            "src_port": 44000, "dst_port": 443, "protocol": "TCP",
+            "packet_count": 60, "total_bytes": 18000, "mean_packet_size": 800,
+            "std_packet_size": 200, "min_packet_size": 60, "max_packet_size": 1460,
+            "flow_duration_sec": 15.0, "mean_inter_arrival_time": 0.3,
+            "std_inter_arrival_time": 0.2, "syn_count": 3, "ack_count": 45,
+            "fin_count": 2, "rst_count": 0, "psh_count": 25, "urg_count": 0,
+            "mean_ttl": 64, "mean_window_size": 65535, "payload_bytes_total": 15000,
+        },
+        {
+            "name": "3. SSH (удалённый доступ)",
             "src_ip": "10.0.0.2", "dst_ip": "192.168.1.2",
             "src_port": 50001, "dst_port": 22, "protocol": "TCP",
             "packet_count": 42, "total_bytes": 650, "mean_packet_size": 85,
@@ -67,7 +79,7 @@ def main():
             "mean_ttl": 128, "mean_window_size": 35000, "payload_bytes_total": 420,
         },
         {
-            "name": "DNS (норма)",
+            "name": "4. DNS (запросы имён)",
             "src_ip": "10.0.0.3", "dst_ip": "8.8.8.8",
             "src_port": 53000, "dst_port": 53, "protocol": "UDP",
             "packet_count": 5, "total_bytes": 450, "mean_packet_size": 90,
@@ -78,7 +90,30 @@ def main():
             "mean_ttl": 64, "mean_window_size": 0, "payload_bytes_total": 320,
         },
         {
-            "name": "SYN-FLOOD (атака)",
+            "name": "5. FTP (скачивание файла)",
+            "src_ip": "10.0.0.5", "dst_ip": "192.168.1.10",
+            "src_port": 31000, "dst_port": 21, "protocol": "TCP",
+            "packet_count": 120, "total_bytes": 45000, "mean_packet_size": 1200,
+            "std_packet_size": 300, "min_packet_size": 40, "max_packet_size": 1460,
+            "flow_duration_sec": 45.0, "mean_inter_arrival_time": 0.4,
+            "std_inter_arrival_time": 0.15, "syn_count": 2, "ack_count": 100,
+            "fin_count": 2, "rst_count": 0, "psh_count": 60, "urg_count": 0,
+            "mean_ttl": 128, "mean_window_size": 65535, "payload_bytes_total": 42000,
+        },
+        {
+            "name": "6. SMTP (отправка почты)",
+            "src_ip": "10.0.0.6", "dst_ip": "192.168.1.20",
+            "src_port": 25000, "dst_port": 25, "protocol": "TCP",
+            "packet_count": 35, "total_bytes": 8500, "mean_packet_size": 450,
+            "std_packet_size": 150, "min_packet_size": 40, "max_packet_size": 1400,
+            "flow_duration_sec": 12.0, "mean_inter_arrival_time": 0.5,
+            "std_inter_arrival_time": 0.3, "syn_count": 2, "ack_count": 25,
+            "fin_count": 4, "rst_count": 0, "psh_count": 15, "urg_count": 0,
+            "mean_ttl": 120, "mean_window_size": 50000, "payload_bytes_total": 6500,
+        },
+        # ===== АТАКИ (4 потока) =====
+        {
+            "name": "7. SYN-FLOOD (атака)",
             "src_ip": "10.0.0.100", "dst_ip": "192.168.1.1",
             "src_port": 31337, "dst_port": 80, "protocol": "TCP",
             "packet_count": 850, "total_bytes": 55000, "mean_packet_size": 60,
@@ -89,7 +124,7 @@ def main():
             "mean_ttl": 64, "mean_window_size": 1024, "payload_bytes_total": 50,
         },
         {
-            "name": "PORT SCAN (атака)",
+            "name": "8. PORT SCAN (атака)",
             "src_ip": "10.0.0.200", "dst_ip": "192.168.1.1",
             "src_port": 40000, "dst_port": 0, "protocol": "TCP",
             "packet_count": 320, "total_bytes": 22000, "mean_packet_size": 60,
@@ -100,7 +135,7 @@ def main():
             "mean_ttl": 128, "mean_window_size": 65535, "payload_bytes_total": 40,
         },
         {
-            "name": "DDoS (атака)",
+            "name": "9. DDoS (атака)",
             "src_ip": "10.0.0.50", "dst_ip": "192.168.1.1",
             "src_port": 12345, "dst_port": 443, "protocol": "TCP",
             "packet_count": 2200, "total_bytes": 180000, "mean_packet_size": 90,
@@ -109,6 +144,17 @@ def main():
             "std_inter_arrival_time": 0.0002, "syn_count": 1100, "ack_count": 450,
             "fin_count": 60, "rst_count": 120, "psh_count": 180, "urg_count": 8,
             "mean_ttl": 64, "mean_window_size": 512, "payload_bytes_total": 95000,
+        },
+        {
+            "name": "10. DNS Amplification (атака)",
+            "src_ip": "10.0.0.150", "dst_ip": "8.8.8.8",
+            "src_port": 53000, "dst_port": 53, "protocol": "UDP",
+            "packet_count": 600, "total_bytes": 120000, "mean_packet_size": 400,
+            "std_packet_size": 200, "min_packet_size": 40, "max_packet_size": 1450,
+            "flow_duration_sec": 3.0, "mean_inter_arrival_time": 0.005,
+            "std_inter_arrival_time": 0.002, "syn_count": 0, "ack_count": 0,
+            "fin_count": 0, "rst_count": 0, "psh_count": 0, "urg_count": 0,
+            "mean_ttl": 255, "mean_window_size": 0, "payload_bytes_total": 115000,
         },
     ]
 
@@ -119,25 +165,27 @@ def main():
     predictions = predictor.predict(features)
 
     # 4. Вывод отчёта
-    print(f"\n{'Тип трафика':<20} {'Статус':<12} {'Оценка':<10} {'RF':<6} {'MLP':<6} {'IF':<6}")
-    print("-" * 60)
+    print(f"\n{'Тип трафика':<25} {'Статус':<12} {'Оценка':<10} {'RF':<6} {'MLP':<6} {'IF':<6}")
+    print("-" * 65)
 
     for i, flow in enumerate(test_flows):
         r = predictions["results"][i]
         status = "АНOМАЛИЯ" if r["is_anomaly"] else "НОРМА"
-        status_color = " <<<" if r["is_anomaly"] else ""
-        print(f"{flow['name']:<20} {status:<12} {r['anomaly_score']:.4f}{'':5} "
+        status_mark = " <<<" if r["is_anomaly"] else ""
+        print(f"{flow['name']:<25} {status:<12} {r['anomaly_score']:.4f}{'':5} "
               f"{'ДА' if r['rf_prediction'] else 'НЕТ':<6} "
               f"{'ДА' if r['mlp_prediction'] else 'НЕТ':<6} "
               f"{'ДА' if r['iso_forest_prediction'] else 'НЕТ':<6}"
-              f"{status_color}")
+              f"{status_mark}")
 
     print(f"\n  Итого: {predictions['normal_count']} норма / {predictions['anomaly_count']} аномалия")
+    print(f"  Соотношение: {predictions['normal_count'] / predictions['total_flows'] * 100:.0f}% / "
+          f"{predictions['anomaly_count'] / predictions['total_flows'] * 100:.0f}%")
 
     # 5. Генерация графиков
     print("\n[4/4] Генерация графиков...")
     visualizer = IDSVisualizer(output_dir="visualizations")
-    visualizer.plot_feature_distribution(df, predictions)
+    visualizer.plot_feature_bar_chart(df, predictions)
     visualizer.plot_anomaly_scores(predictions)
     visualizer.plot_model_comparison(predictions)
 
@@ -152,6 +200,8 @@ def main():
             "total": predictions["total_flows"],
             "normal": predictions["normal_count"],
             "anomaly": predictions["anomaly_count"],
+            "ratio": f"{predictions['normal_count'] / predictions['total_flows'] * 100:.0f}% норма / "
+                     f"{predictions['anomaly_count'] / predictions['total_flows'] * 100:.0f}% аномалия",
         }
     }
     with open(results_path / "report.json", "w", encoding="utf-8") as f:
@@ -161,8 +211,9 @@ def main():
     print(f"      Отчёт сохранён: verify_results/report.json")
 
     print_separator("ПРОВЕРКА ЗАВЕРШЕНА")
-    print(f"\n  Нормальных потоков: {predictions['normal_count']}")
-    print(f"  Аномалий обнаружено: {predictions['anomaly_count']}")
+    print(f"\n  Всего потоков: {predictions['total_flows']}")
+    print(f"  Нормальных: {predictions['normal_count']}")
+    print(f"  Аномалий: {predictions['anomaly_count']}")
     print(f"\n  Модели: Random Forest, MLP Neural Network, Isolation Forest")
     print(f"  Решение: голосование (>= 2 моделей = аномалия)")
 

@@ -43,7 +43,7 @@ def cmd_predict(args):
                 alert_data["anomaly_score"] = result["anomaly_score"]
                 notifier.send_alert(alert_data)
 
-    visualizer.plot_feature_distribution(flows, predictions)
+    visualizer.plot_feature_bar_chart(flows, predictions)
     visualizer.plot_anomaly_scores(predictions)
     visualizer.plot_model_comparison(predictions)
 
@@ -70,7 +70,7 @@ def cmd_analyze(args):
                 alert_data["anomaly_score"] = result["anomaly_score"]
                 notifier.send_alert(alert_data)
 
-    visualizer.plot_feature_distribution(flows, predictions)
+    visualizer.plot_feature_bar_chart(flows, predictions)
     visualizer.plot_anomaly_scores(predictions)
     visualizer.plot_model_comparison(predictions)
 
