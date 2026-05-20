@@ -80,10 +80,22 @@ def cmd_analyze(args):
 
 
 def cmd_api(args):
+    import json
+    from datetime import datetime
     from fastapi import FastAPI, Query
     import uvicorn
     import pandas as pd
     from pathlib import Path
+
+    HISTORY_FILE = Path("api_history.json")
+    history = []
+    if HISTORY_FILE.exists():
+        with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+            history.extend(json.load(f))
+
+    def save_history():
+        with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+            json.dump(history[-100:], f, indent=2, ensure_ascii=False)
 
     app = FastAPI(title="IDS — система обнаружения вторжений", version="1.0.0",
                   description="Вариант 3. Python + scikit-learn + Go + PCAP")
@@ -98,10 +110,14 @@ def cmd_api(args):
             "endpoints": {
                 "GET  /": "информация о сервисе",
                 "GET  /health": "проверка работоспособности",
-                "POST /predict": "классификация потоков трафика",
+                "POST /predict": "классификация потоков трафика (сохраняется в историю)",
+                "GET  /history": "история всех запросов",
+                "GET  /history/{id}": "конкретный запрос из истории",
                 "POST /train": "переобучить модели",
+                "GET  /visualize": "сгенерировать графики из истории",
                 "GET  /model": "информация о моделях",
                 "GET  /stats": "статистика детектирования",
+                "POST /clear-history": "очистить историю",
             }
         }
 
@@ -115,7 +131,54 @@ def cmd_api(args):
         if flows.empty:
             return {"error": "No flows provided"}
         features = prepare_features(flows)
-        return predictor.predict(features)
+        result = predictor.predict(features)
+        entry = {
+            "id": len(history) + 1,
+            "timestamp": datetime.now().isoformat(),
+            "input": data.get("flows", []),
+            "result": result,
+        }
+        history.append(entry)
+        save_history()
+        return result
+
+    @app.get("/history")
+    async def get_history(limit: int = Query(20, description="Last N records")):
+        return {"total": len(history), "records": history[-limit:]}
+
+    @app.get("/history/{item_id}")
+    async def get_history_item(item_id: int):
+        for item in reversed(history):
+            if item["id"] == item_id:
+                return item
+        return {"error": "Not found"}
+
+    @app.post("/clear-history")
+    async def clear_history():
+        history.clear()
+        save_history()
+        return {"status": "ok", "message": "History cleared"}
+
+    @app.get("/visualize")
+    async def visualize():
+        from visualization.dashboard import IDSVisualizer
+        if not history:
+            return {"error": "No data in history"}
+        last = history[-1]
+        flows = pd.json_normalize(last["input"])
+        visualizer = IDSVisualizer()
+        visualizer.plot_feature_bar_chart(flows, last["result"])
+        visualizer.plot_anomaly_scores(last["result"])
+        visualizer.plot_model_comparison(last["result"])
+        return {
+            "status": "ok",
+            "message": "Graphs generated from last request",
+            "files": [
+                "visualizations/feature_comparison.png",
+                "visualizations/anomaly_scores.png",
+                "visualizations/model_comparison.png",
+            ]
+        }
 
     @app.post("/train")
     async def train_endpoint(samples: int = Query(200, description="Samples per traffic type")):
@@ -149,9 +212,9 @@ def cmd_api(args):
 
     @app.get("/stats")
     async def stats():
-        n_models = 3
         return {
-            "total_models": n_models,
+            "total_models": 3,
+            "total_requests_in_history": len(history),
             "detection_method": "ensemble_voting",
             "threshold": ">= 2 models detect anomaly",
             "traffic_types": {
