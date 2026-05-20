@@ -35,3 +35,6 @@ verify_results/
 
 .DS_Store
 Thumbs.db
+
+.env
+api_history.json

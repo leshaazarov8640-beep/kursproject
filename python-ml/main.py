@@ -252,6 +252,16 @@ def main():
     api_parser.add_argument("--port", type=int, default=8000)
     api_parser.add_argument("--model-dir", default="models")
 
+    # Load .env file if present (simple KEY=VALUE format)
+    env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if os.path.exists(env_file):
+        with open(env_file, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    key, _, val = line.partition("=")
+                    os.environ.setdefault(key.strip(), val.strip())
+
     args = parser.parse_args()
     if args.telegram_token:
         os.environ["TELEGRAM_BOT_TOKEN"] = args.telegram_token
