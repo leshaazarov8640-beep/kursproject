@@ -230,6 +230,7 @@ def cmd_api(args):
 def main():
     parser = argparse.ArgumentParser(description="IDS - Intrusion Detection System")
     parser.add_argument("--telegram-token", help="Telegram bot token for alerts")
+    parser.add_argument("--telegram-chat-id", help="Telegram chat ID for alerts")
     parser.add_argument("--slack-webhook", help="Slack webhook URL for alerts")
     subparsers = parser.add_subparsers(dest="command")
 
@@ -254,6 +255,8 @@ def main():
     args = parser.parse_args()
     if args.telegram_token:
         os.environ["TELEGRAM_BOT_TOKEN"] = args.telegram_token
+    if args.telegram_chat_id:
+        os.environ["TELEGRAM_CHAT_ID"] = args.telegram_chat_id
     if args.slack_webhook:
         os.environ["SLACK_WEBHOOK_URL"] = args.slack_webhook
     if args.command == "train":
