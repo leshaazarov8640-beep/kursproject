@@ -80,24 +80,85 @@ def cmd_analyze(args):
 
 
 def cmd_api(args):
-    from fastapi import FastAPI
+    from fastapi import FastAPI, Query
     import uvicorn
+    import pandas as pd
+    from pathlib import Path
 
-    app = FastAPI(title="IDS ML Service", version="1.0.0")
+    app = FastAPI(title="IDS — система обнаружения вторжений", version="1.0.0",
+                  description="Вариант 3. Python + scikit-learn + Go + PCAP")
     predictor = IDSPredictor(model_dir=args.model_dir)
+
+    @app.get("/")
+    async def root():
+        return {
+            "service": "IDS — Intrusion Detection System",
+            "version": "1.0.0",
+            "variant": 3,
+            "endpoints": {
+                "GET  /": "информация о сервисе",
+                "GET  /health": "проверка работоспособности",
+                "POST /predict": "классификация потоков трафика",
+                "POST /train": "переобучить модели",
+                "GET  /model": "информация о моделях",
+                "GET  /stats": "статистика детектирования",
+            }
+        }
+
+    @app.get("/health")
+    async def health():
+        return {"status": "ok", "model": "IDS v1.0", "variant": 3}
 
     @app.post("/predict")
     async def predict_flows(data: dict):
-        import pandas as pd
         flows = pd.json_normalize(data.get("flows", []))
         if flows.empty:
             return {"error": "No flows provided"}
         features = prepare_features(flows)
         return predictor.predict(features)
 
-    @app.get("/health")
-    async def health():
-        return {"status": "ok", "model": "IDS v1.0"}
+    @app.post("/train")
+    async def train_endpoint(samples: int = Query(200, description="Samples per traffic type")):
+        from model.train import generate_training_data, train_models
+        X, y = generate_training_data(n_per_class=samples)
+        train_models(X, y, model_dir=args.model_dir)
+        return {
+            "status": "ok",
+            "samples": len(X),
+            "normal": int(sum(y == 0)),
+            "anomaly": int(sum(y == 1)),
+            "message": "Models retrained successfully"
+        }
+
+    @app.get("/model")
+    async def model_info():
+        return {
+            "models": [
+                {"name": "Random Forest", "params": "100 trees, max_depth=15"},
+                {"name": "MLP Neural Network", "params": "layers=[64, 32], adam, relu"},
+                {"name": "Isolation Forest", "params": "100 estimators, contamination=0.1"},
+            ],
+            "ensemble": "Majority voting (>= 2 models = anomaly)",
+            "features_count": 19,
+            "features": [
+                "packet_count", "total_bytes", "mean_packet_size",
+                "syn_count", "ack_count", "rst_count",
+                "flow_duration_sec", "mean_ttl", "mean_window_size",
+            ]
+        }
+
+    @app.get("/stats")
+    async def stats():
+        n_models = 3
+        return {
+            "total_models": n_models,
+            "detection_method": "ensemble_voting",
+            "threshold": ">= 2 models detect anomaly",
+            "traffic_types": {
+                "normal": ["HTTP", "HTTPS", "SSH", "DNS", "FTP", "SMTP"],
+                "anomaly": ["SYN Flood", "Port Scan", "DDoS", "DNS Amplification"],
+            }
+        }
 
     uvicorn.run(app, host=args.host, port=args.port)
 
