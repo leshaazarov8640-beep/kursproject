@@ -190,6 +190,7 @@ sequenceDiagram
 | **joblib** | Сериализация | Быстрая загрузка/сохранение моделей |
 | **requests** | HTTP-клиент | Telegram / Slack API |
 | **pytest** | Тестирование | Стандарт Python, фикстуры, параметризация |
+| **Streamlit** | Веб-дашборд | Быстрая разработка UI без фронтенд-кода |
 | **gopacket** | Захват пакетов | Основная библиотека для работы с PCAP в Go |
 | **Docker + Compose** | Контейнеризация | Воспроизводимый запуск |
 
@@ -215,6 +216,8 @@ ids-project/
 │   ├── output/output.go          # Вывод результатов (JSON/stdout)
 │   ├── main.go                   # CLI-точка входа
 │   └── go.mod / go.sum           # Go-зависимости
+│
+├── dashboard/app.py              # Streamlit веб-дашборд
 │
 ├── python-ml/                    # Python-модуль ML + алерты
 │   ├── main.py                   # CLI + FastAPI точка входа
@@ -262,6 +265,13 @@ ids-project/
 2. Оценка аномальности каждого потока + круговая диаграмма распределения.
 3. Сравнение результатов трёх моделей.
 
+**Веб-дашборд** ([`dashboard/app.py`](dashboard/app.py)) — интерактивный дашборд на Streamlit с 5 вкладками:
+1. **Аналитика** — KPI-метрики точности моделей, отображение графиков детекции.
+2. **Предсказание** — форма ручного ввода признаков потока с мгновенной классификацией.
+3. **Пакетный анализ** — загрузка JSON с потоками (текст или файл), таблица результатов.
+4. **Обучение** — переобучение моделей с выбором количества образцов.
+5. **О проекте** — информация о технологиях и архитектуре.
+
 ### Запуск
 
 **Локально (Python):**
@@ -283,14 +293,26 @@ go build -o ../bin/ids-pcap.exe .
 ./bin/ids-pcap.exe --mode file --file traffic.pcap --output features.json
 ```
 
+**Веб-дашборд (Streamlit):**
+
+```bash
+cd dashboard
+streamlit run app.py
+```
+
+Дашборд доступен по адресу: [http://localhost:8501](http://localhost:8501)
+Вкладки: Аналитика, Предсказание, Пакетный анализ, Обучение, О проекте
+
 **Docker Compose:**
 
 ```bash
 docker compose up --build
 ```
 
-После запуска API доступен по адресу: [http://localhost:8000](http://localhost:8000)
-Swagger UI: [http://localhost:8000/docs](http://localhost:8000/docs)
+После запуска:
+- API: [http://localhost:8000](http://localhost:8000)
+- Swagger UI: [http://localhost:8000/docs](http://localhost:8000/docs)
+- Дашборд: [http://localhost:8501](http://localhost:8501)
 
 ---
 
@@ -444,6 +466,7 @@ curl -X POST "http://localhost:8000/train?samples=200"
 |---|---|
 | `go-pcap/` | Go-модуль захвата и анализа пакетов |
 | `python-ml/` | Python-модуль: ML, алерты, визуализация, API |
+| `dashboard/` | Streamlit веб-дашборд |
 | `python-ml/tests/` | 45 тестов (pytest, 5 файлов) |
 | `python-ml/models/` | Сохранённые ML-модели (.pkl) |
 | `python-ml/visualizations/` | Сгенерированные графики |
