@@ -20,7 +20,7 @@ class IDSPredictor:
         for col in self.feature_names:
             if col not in features.columns:
                 features[col] = 0.0
-        X = features[self.feature_names].fillna(0).values
+        X = features[self.feature_names].fillna(0)
         X_scaled = self.scaler.transform(X)
 
         rf_pred = self.rf_model.predict(X_scaled)

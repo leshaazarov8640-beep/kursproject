@@ -59,10 +59,11 @@ class AlertNotifier:
 
     def send_alert(self, alert_data: Dict, telegram_chat_id: Optional[str] = None) -> None:
         message = self.format_alert_message(alert_data)
-        logger.info(f"Alert: {message}")
+        print(f"[Alert] {alert_data.get('anomaly_score', 0):.2f} — {alert_data.get('src_ip', '?')}:{alert_data.get('src_port', '?')} -> {alert_data.get('dst_ip', '?')}:{alert_data.get('dst_port', '?')}")
 
         if telegram_chat_id or os.getenv("TELEGRAM_CHAT_ID"):
             chat_id = telegram_chat_id or os.getenv("TELEGRAM_CHAT_ID")
-            self.send_telegram(chat_id, message)
+            success = self.send_telegram(chat_id, message)
+            print(f"[Telegram] {'sent' if success else 'failed'}")
 
         self.send_slack(message)

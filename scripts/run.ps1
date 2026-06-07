@@ -15,21 +15,21 @@ function Build-Go {
 function Train-ML {
     Write-Host "[TRAIN] Training ML models..." -ForegroundColor Green
     Push-Location "$ProjectRoot\python-ml"
-    python main.py train
+    py main.py train
     Pop-Location
 }
 
 function Run-Verify {
     Write-Host "[VERIFY] Running verification script..." -ForegroundColor Green
     Push-Location "$ProjectRoot\python-ml"
-    python verify.py
+    py verify.py
     Pop-Location
 }
 
 function Start-API {
     Write-Host "[API] Starting FastAPI server on port 8000..." -ForegroundColor Green
     Push-Location "$ProjectRoot\python-ml"
-    python main.py api --host 0.0.0.0 --port 8000
+    py main.py api --host 0.0.0.0 --port 8000
     Pop-Location
 }
 
