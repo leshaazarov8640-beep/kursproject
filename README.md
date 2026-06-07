@@ -240,6 +240,7 @@ ids-project/
 │
 ├── bin/ids-pcap.exe              # Предсобранный Go-бинарник
 ├── scripts/run.ps1               # PowerShell-скрипт автоматизации
+├── scripts/pcap_to_json.py       # Конвертер PCAP → JSON (через scapy)
 ├── docker-compose.yml            # Docker Compose
 ├── Dockerfile.go                 # Dockerfile для Go-модуля
 ├── Dockerfile.python             # Dockerfile для Python-модуля

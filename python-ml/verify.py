@@ -40,11 +40,11 @@ def main():
     rf, mlp, iso, scaler = train_models(X, y, model_dir="models")
     print("      Модели сохранены в папке models/")
 
-    # 2. Тестовые данные — 10 потоков (6 норма, 4 атаки)
-    print("\n[3/4] Проверка на 10 тестовых потоках...")
+    # 2. Тестовые данные — 20 потоков (12 норма, 8 атак)
+    print("\n[3/4] Проверка на 20 тестовых потоках...")
 
     test_flows = [
-        # ===== НОРМАЛЬНЫЙ ТРАФИК (6 потоков) =====
+        # ===== НОРМАЛЬНЫЙ ТРАФИК (12 потоков) =====
         {
             "name": "1. HTTP (веб-сёрфинг)",
             "src_ip": "10.0.0.1", "dst_ip": "192.168.1.1",
@@ -111,9 +111,75 @@ def main():
             "fin_count": 4, "rst_count": 0, "psh_count": 15, "urg_count": 0,
             "mean_ttl": 120, "mean_window_size": 50000, "payload_bytes_total": 6500,
         },
-        # ===== АТАКИ (4 потока) =====
         {
-            "name": "7. SYN-FLOOD (атака)",
+            "name": "7. DHCP (аренда адреса)",
+            "src_ip": "0.0.0.0", "dst_ip": "255.255.255.255",
+            "src_port": 68, "dst_port": 67, "protocol": "UDP",
+            "packet_count": 4, "total_bytes": 1100, "mean_packet_size": 275,
+            "std_packet_size": 30, "min_packet_size": 240, "max_packet_size": 300,
+            "flow_duration_sec": 2.0, "mean_inter_arrival_time": 0.5,
+            "std_inter_arrival_time": 0.1, "syn_count": 0, "ack_count": 0,
+            "fin_count": 0, "rst_count": 0, "psh_count": 0, "urg_count": 0,
+            "mean_ttl": 128, "mean_window_size": 0, "payload_bytes_total": 800,
+        },
+        {
+            "name": "8. ICMP Ping (проверка связи)",
+            "src_ip": "10.0.0.19", "dst_ip": "8.8.8.8",
+            "src_port": 0, "dst_port": 0, "protocol": "ICMP",
+            "packet_count": 4, "total_bytes": 240, "mean_packet_size": 60,
+            "std_packet_size": 5, "min_packet_size": 50, "max_packet_size": 70,
+            "flow_duration_sec": 3.0, "mean_inter_arrival_time": 1.0,
+            "std_inter_arrival_time": 0.1, "syn_count": 0, "ack_count": 0,
+            "fin_count": 0, "rst_count": 0, "psh_count": 0, "urg_count": 0,
+            "mean_ttl": 64, "mean_window_size": 0, "payload_bytes_total": 100,
+        },
+        {
+            "name": "9. API REST (JSON запросы)",
+            "src_ip": "10.0.0.20", "dst_ip": "192.168.1.1",
+            "src_port": 36000, "dst_port": 8080, "protocol": "TCP",
+            "packet_count": 18, "total_bytes": 2800, "mean_packet_size": 380,
+            "std_packet_size": 80, "min_packet_size": 40, "max_packet_size": 1300,
+            "flow_duration_sec": 5.0, "mean_inter_arrival_time": 0.3,
+            "std_inter_arrival_time": 0.2, "syn_count": 2, "ack_count": 14,
+            "fin_count": 2, "rst_count": 0, "psh_count": 6, "urg_count": 0,
+            "mean_ttl": 64, "mean_window_size": 64000, "payload_bytes_total": 2000,
+        },
+        {
+            "name": "10. Telegram (мессенджер)",
+            "src_ip": "10.0.0.18", "dst_ip": "149.154.167.50",
+            "src_port": 45000, "dst_port": 443, "protocol": "TCP",
+            "packet_count": 30, "total_bytes": 12000, "mean_packet_size": 600,
+            "std_packet_size": 200, "min_packet_size": 60, "max_packet_size": 1400,
+            "flow_duration_sec": 45.0, "mean_inter_arrival_time": 1.5,
+            "std_inter_arrival_time": 0.8, "syn_count": 2, "ack_count": 22,
+            "fin_count": 1, "rst_count": 0, "psh_count": 15, "urg_count": 0,
+            "mean_ttl": 64, "mean_window_size": 65535, "payload_bytes_total": 8000,
+        },
+        {
+            "name": "11. Видео-стрим (YouTube)",
+            "src_ip": "10.0.0.15", "dst_ip": "172.217.16.46",
+            "src_port": 42000, "dst_port": 443, "protocol": "TCP",
+            "packet_count": 450, "total_bytes": 580000, "mean_packet_size": 1350,
+            "std_packet_size": 120, "min_packet_size": 60, "max_packet_size": 1460,
+            "flow_duration_sec": 180.0, "mean_inter_arrival_time": 0.008,
+            "std_inter_arrival_time": 0.004, "syn_count": 5, "ack_count": 380,
+            "fin_count": 4, "rst_count": 0, "psh_count": 300, "urg_count": 0,
+            "mean_ttl": 64, "mean_window_size": 65535, "payload_bytes_total": 520000,
+        },
+        {
+            "name": "12. NTP (синхронизация времени)",
+            "src_ip": "10.0.0.13", "dst_ip": "162.159.200.1",
+            "src_port": 123, "dst_port": 123, "protocol": "UDP",
+            "packet_count": 6, "total_bytes": 480, "mean_packet_size": 80,
+            "std_packet_size": 5, "min_packet_size": 70, "max_packet_size": 90,
+            "flow_duration_sec": 30.0, "mean_inter_arrival_time": 5.0,
+            "std_inter_arrival_time": 0.5, "syn_count": 0, "ack_count": 0,
+            "fin_count": 0, "rst_count": 0, "psh_count": 0, "urg_count": 0,
+            "mean_ttl": 64, "mean_window_size": 0, "payload_bytes_total": 300,
+        },
+        # ===== АТАКИ (8 потоков) =====
+        {
+            "name": "13. SYN-FLOOD (атака)",
             "src_ip": "10.0.0.100", "dst_ip": "192.168.1.1",
             "src_port": 31337, "dst_port": 80, "protocol": "TCP",
             "packet_count": 850, "total_bytes": 55000, "mean_packet_size": 60,
@@ -124,7 +190,7 @@ def main():
             "mean_ttl": 64, "mean_window_size": 1024, "payload_bytes_total": 50,
         },
         {
-            "name": "8. PORT SCAN (атака)",
+            "name": "14. PORT SCAN (атака)",
             "src_ip": "10.0.0.200", "dst_ip": "192.168.1.1",
             "src_port": 40000, "dst_port": 0, "protocol": "TCP",
             "packet_count": 320, "total_bytes": 22000, "mean_packet_size": 60,
@@ -135,7 +201,7 @@ def main():
             "mean_ttl": 128, "mean_window_size": 65535, "payload_bytes_total": 40,
         },
         {
-            "name": "9. DDoS (атака)",
+            "name": "15. DDoS (атака)",
             "src_ip": "10.0.0.50", "dst_ip": "192.168.1.1",
             "src_port": 12345, "dst_port": 443, "protocol": "TCP",
             "packet_count": 2200, "total_bytes": 180000, "mean_packet_size": 90,
@@ -146,7 +212,7 @@ def main():
             "mean_ttl": 64, "mean_window_size": 512, "payload_bytes_total": 95000,
         },
         {
-            "name": "10. DNS Amplification (атака)",
+            "name": "16. DNS Amplification (атака)",
             "src_ip": "10.0.0.150", "dst_ip": "8.8.8.8",
             "src_port": 53000, "dst_port": 53, "protocol": "UDP",
             "packet_count": 600, "total_bytes": 120000, "mean_packet_size": 400,
@@ -155,6 +221,50 @@ def main():
             "std_inter_arrival_time": 0.002, "syn_count": 0, "ack_count": 0,
             "fin_count": 0, "rst_count": 0, "psh_count": 0, "urg_count": 0,
             "mean_ttl": 255, "mean_window_size": 0, "payload_bytes_total": 115000,
+        },
+        {
+            "name": "17. Brute Force SSH (подбор пароля)",
+            "src_ip": "10.0.0.180", "dst_ip": "192.168.1.2",
+            "src_port": 50010, "dst_port": 22, "protocol": "TCP",
+            "packet_count": 200, "total_bytes": 3200, "mean_packet_size": 75,
+            "std_packet_size": 12, "min_packet_size": 40, "max_packet_size": 200,
+            "flow_duration_sec": 60.0, "mean_inter_arrival_time": 0.05,
+            "std_inter_arrival_time": 0.02, "syn_count": 150, "ack_count": 42,
+            "fin_count": 8, "rst_count": 5, "psh_count": 35, "urg_count": 0,
+            "mean_ttl": 64, "mean_window_size": 32000, "payload_bytes_total": 1800,
+        },
+        {
+            "name": "18. Slowloris (атака медленными запросами)",
+            "src_ip": "10.0.0.190", "dst_ip": "192.168.1.1",
+            "src_port": 35000, "dst_port": 80, "protocol": "TCP",
+            "packet_count": 15, "total_bytes": 800, "mean_packet_size": 55,
+            "std_packet_size": 8, "min_packet_size": 40, "max_packet_size": 100,
+            "flow_duration_sec": 600.0, "mean_inter_arrival_time": 18.0,
+            "std_inter_arrival_time": 5.0, "syn_count": 12, "ack_count": 2,
+            "fin_count": 0, "rst_count": 0, "psh_count": 1, "urg_count": 0,
+            "mean_ttl": 64, "mean_window_size": 256, "payload_bytes_total": 200,
+        },
+        {
+            "name": "19. ICMP Flood (ping-атака)",
+            "src_ip": "10.0.0.160", "dst_ip": "192.168.1.1",
+            "src_port": 0, "dst_port": 0, "protocol": "ICMP",
+            "packet_count": 1500, "total_bytes": 90000, "mean_packet_size": 60,
+            "std_packet_size": 5, "min_packet_size": 40, "max_packet_size": 80,
+            "flow_duration_sec": 5.0, "mean_inter_arrival_time": 0.0005,
+            "std_inter_arrival_time": 0.0002, "syn_count": 0, "ack_count": 0,
+            "fin_count": 0, "rst_count": 0, "psh_count": 0, "urg_count": 0,
+            "mean_ttl": 255, "mean_window_size": 0, "payload_bytes_total": 85000,
+        },
+        {
+            "name": "20. ARP Spoofing (атака)",
+            "src_ip": "10.0.0.250", "dst_ip": "192.168.1.1",
+            "src_port": 0, "dst_port": 0, "protocol": "OTHER",
+            "packet_count": 400, "total_bytes": 8000, "mean_packet_size": 42,
+            "std_packet_size": 2, "min_packet_size": 40, "max_packet_size": 50,
+            "flow_duration_sec": 15.0, "mean_inter_arrival_time": 0.002,
+            "std_inter_arrival_time": 0.001, "syn_count": 0, "ack_count": 0,
+            "fin_count": 0, "rst_count": 0, "psh_count": 0, "urg_count": 0,
+            "mean_ttl": 64, "mean_window_size": 0, "payload_bytes_total": 4000,
         },
     ]
 
@@ -214,7 +324,7 @@ def main():
     print(f"\n  Всего потоков: {predictions['total_flows']}")
     print(f"  Нормальных: {predictions['normal_count']}")
     print(f"  Аномалий: {predictions['anomaly_count']}")
-    print(f"\n  Модели: Random Forest, MLP Neural Network, Isolation Forest")
+    print(f"  Модели: Random Forest, MLP Neural Network, Isolation Forest")
     print(f"  Решение: голосование (>= 2 моделей = аномалия)")
 
 

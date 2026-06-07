@@ -40,7 +40,7 @@ def make_prediction(df):
     features = prepare_features(df)
     return predictor.predict(features)
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["Аналитика", "Предсказание", "Пакетный анализ", "Обучение", "О проекте"])
+tab1, tab2, tab3, tab4 = st.tabs(["Аналитика", "Детектирование", "Обучение", "О проекте"])
 
 with tab1:
     st.header("Аналитика детектирования")
@@ -74,7 +74,7 @@ with tab1:
         if img1.exists():
             st.image(str(img1), caption="Сравнение признаков по потокам", use_container_width=True)
         else:
-            st.info("График feature_comparison.png не найден. Запустите verify.py")
+            st.info("График feature_comparison.png не найден")
 
     with col_img2:
         img2 = viz_dir / "anomaly_scores.png"
@@ -87,61 +87,105 @@ with tab1:
     if img3.exists():
         st.image(str(img3), caption="Сравнение моделей", use_container_width=True)
 
+    st.markdown("---")
+    if st.button("Сгенерировать графики", type="primary"):
+        if not (model_dir / "random_forest.pkl").exists():
+            st.error("Модели не обучены. Сначала нажмите «Начать обучение» на вкладке «Обучение».")
+        else:
+            with st.spinner("Генерация 20 тестовых потоков и построение графиков..."):
+                import subprocess, sys as _sys
+                verify_script = Path(__file__).parent.parent / "python-ml" / "verify.py"
+                result = subprocess.run([_sys.executable, str(verify_script)],
+                    capture_output=True, text=True, cwd=verify_script.parent)
+            if result.returncode == 0:
+                st.success("Графики обновлены!")
+                st.cache_resource.clear()
+                st.rerun()
+            else:
+                st.error(f"Ошибка: {result.stderr[-500:]}")
+
 with tab2:
-    st.header("Ручной анализ потока")
+    mode = st.radio("Режим ввода:", ["Ручной (1 поток)", "JSON текст", "Загрузить JSON файл"], horizontal=True)
 
-    with st.form("predict_form"):
-        col1, col2 = st.columns(2)
-        with col1:
-            src_ip = st.text_input("Src IP", "10.0.0.1")
-            dst_ip = st.text_input("Dst IP", "192.168.1.1")
-            src_port = st.number_input("Src Port", 0, 65535, 12345)
-            dst_port = st.number_input("Dst Port", 0, 65535, 80)
-            protocol = st.selectbox("Protocol", ["TCP", "UDP", "ICMP"])
-            packet_count = st.number_input("Packet Count", 0, 10000, 25)
-            total_bytes = st.number_input("Total Bytes", 0, 500000, 3000)
-        with col2:
-            mean_packet_size = st.number_input("Mean Packet Size", 0.0, 1500.0, 350.0)
-            std_packet_size = st.number_input("Std Packet Size", 0.0, 500.0, 45.0)
-            min_packet_size = st.number_input("Min Packet Size", 0, 1500, 40)
-            max_packet_size = st.number_input("Max Packet Size", 0, 1500, 1400)
-            flow_duration = st.number_input("Flow Duration (sec)", 0.0, 1000.0, 10.0)
-            syn_count = st.number_input("SYN Count", 0, 5000, 2)
-            ack_count = st.number_input("ACK Count", 0, 5000, 18)
+    flows_data = None
+    single_flow = None
 
-        with st.expander("Дополнительные признаки"):
-            col3, col4 = st.columns(2)
-            with col3:
-                fin_count = st.number_input("FIN Count", 0, 1000, 2)
-                rst_count = st.number_input("RST Count", 0, 1000, 0)
-                psh_count = st.number_input("PSH Count", 0, 1000, 8)
-                urg_count = st.number_input("URG Count", 0, 1000, 0)
-                mean_ttl = st.number_input("Mean TTL", 0.0, 255.0, 120.0)
-            with col4:
-                mean_window = st.number_input("Mean Window Size", 0.0, 65535.0, 65000.0)
-                payload_bytes = st.number_input("Payload Bytes", 0, 500000, 2000)
-                mean_iat = st.number_input("Mean Inter-Arrival Time", 0.0, 10.0, 0.5)
-                std_iat = st.number_input("Std Inter-Arrival Time", 0.0, 5.0, 0.3)
+    if mode == "Ручной (1 поток)":
+        with st.form("predict_form"):
+            col1, col2 = st.columns(2)
+            with col1:
+                src_ip = st.text_input("Src IP", "10.0.0.1")
+                dst_ip = st.text_input("Dst IP", "192.168.1.1")
+                src_port = st.number_input("Src Port", 0, 65535, 12345)
+                dst_port = st.number_input("Dst Port", 0, 65535, 80)
+                protocol = st.selectbox("Protocol", ["TCP", "UDP", "ICMP"])
+                packet_count = st.number_input("Packet Count", 0, 10000, 25)
+                total_bytes = st.number_input("Total Bytes", 0, 500000, 3000)
+            with col2:
+                mean_packet_size = st.number_input("Mean Packet Size", 0.0, 1500.0, 350.0)
+                std_packet_size = st.number_input("Std Packet Size", 0.0, 500.0, 45.0)
+                min_packet_size = st.number_input("Min Packet Size", 0, 1500, 40)
+                max_packet_size = st.number_input("Max Packet Size", 0, 1500, 1400)
+                flow_duration = st.number_input("Flow Duration (sec)", 0.0, 1000.0, 10.0)
+                syn_count = st.number_input("SYN Count", 0, 5000, 2)
+                ack_count = st.number_input("ACK Count", 0, 5000, 18)
 
-        submitted = st.form_submit_button("Анализировать", type="primary")
+            with st.expander("Дополнительные признаки"):
+                col3, col4 = st.columns(2)
+                with col3:
+                    fin_count = st.number_input("FIN Count", 0, 1000, 2)
+                    rst_count = st.number_input("RST Count", 0, 1000, 0)
+                    psh_count = st.number_input("PSH Count", 0, 1000, 8)
+                    urg_count = st.number_input("URG Count", 0, 1000, 0)
+                    mean_ttl = st.number_input("Mean TTL", 0.0, 255.0, 120.0)
+                with col4:
+                    mean_window = st.number_input("Mean Window Size", 0.0, 65535.0, 65000.0)
+                    payload_bytes = st.number_input("Payload Bytes", 0, 500000, 2000)
+                    mean_iat = st.number_input("Mean Inter-Arrival Time", 0.0, 10.0, 0.5)
+                    std_iat = st.number_input("Std Inter-Arrival Time", 0.0, 5.0, 0.3)
 
-    if submitted:
-        flow = {
-            "src_ip": src_ip, "dst_ip": dst_ip,
-            "src_port": src_port, "dst_port": dst_port,
-            "protocol": protocol,
-            "packet_count": packet_count, "total_bytes": total_bytes,
-            "mean_packet_size": mean_packet_size, "std_packet_size": std_packet_size,
-            "min_packet_size": min_packet_size, "max_packet_size": max_packet_size,
-            "flow_duration_sec": flow_duration,
-            "mean_inter_arrival_time": mean_iat, "std_inter_arrival_time": std_iat,
-            "syn_count": syn_count, "ack_count": ack_count,
-            "fin_count": fin_count, "rst_count": rst_count,
-            "psh_count": psh_count, "urg_count": urg_count,
-            "mean_ttl": mean_ttl, "mean_window_size": mean_window,
-            "payload_bytes_total": payload_bytes,
-        }
-        result = make_prediction(pd.DataFrame([flow]))
+            submitted = st.form_submit_button("Анализировать", type="primary")
+
+        if submitted:
+            single_flow = {
+                "src_ip": src_ip, "dst_ip": dst_ip,
+                "src_port": src_port, "dst_port": dst_port,
+                "protocol": protocol,
+                "packet_count": packet_count, "total_bytes": total_bytes,
+                "mean_packet_size": mean_packet_size, "std_packet_size": std_packet_size,
+                "min_packet_size": min_packet_size, "max_packet_size": max_packet_size,
+                "flow_duration_sec": flow_duration,
+                "mean_inter_arrival_time": mean_iat, "std_inter_arrival_time": std_iat,
+                "syn_count": syn_count, "ack_count": ack_count,
+                "fin_count": fin_count, "rst_count": rst_count,
+                "psh_count": psh_count, "urg_count": urg_count,
+                "mean_ttl": mean_ttl, "mean_window_size": mean_window,
+                "payload_bytes_total": payload_bytes,
+            }
+
+    elif mode == "JSON текст":
+        json_text = st.text_area("Вставьте JSON с потоками:", height=200,
+            value='[{"packet_count": 25, "total_bytes": 3200, "mean_packet_size": 350, "std_packet_size": 45, "min_packet_size": 40, "max_packet_size": 1400, "flow_duration_sec": 28.0, "mean_inter_arrival_time": 0.75, "std_inter_arrival_time": 0.45, "syn_count": 2, "ack_count": 18, "fin_count": 2, "rst_count": 0, "psh_count": 8, "urg_count": 0, "mean_ttl": 120, "mean_window_size": 65000, "payload_bytes_total": 2100, "protocol": "TCP"}]')
+        if json_text.strip():
+            try:
+                data = json.loads(json_text)
+                flows_data = pd.json_normalize(data) if isinstance(data, list) else pd.DataFrame([data])
+                st.success(f"Загружено {len(flows_data)} потоков")
+            except Exception as e:
+                st.error(f"Ошибка парсинга JSON: {e}")
+
+    else:
+        uploaded = st.file_uploader("Выберите JSON файл", type=["json"])
+        if uploaded:
+            try:
+                data = json.loads(uploaded.read())
+                flows_data = pd.json_normalize(data) if isinstance(data, list) else pd.DataFrame([data])
+                st.success(f"Загружено {len(flows_data)} потоков из файла")
+            except Exception as e:
+                st.error(f"Ошибка чтения файла: {e}")
+
+    if single_flow is not None:
+        result = make_prediction(pd.DataFrame([single_flow]))
         if result and result["results"]:
             r = result["results"][0]
             status = "АНОМАЛИЯ" if r["is_anomaly"] else "НОРМА"
@@ -155,46 +199,13 @@ with tab2:
                           delta=f"{r['mlp_confidence']:.0%}" if r["mlp_confidence"] else None)
             col_m3.metric("Isolation Forest", "Аномалия" if r["iso_forest_prediction"] else "Норма")
 
-with tab3:
-    st.header("Пакетный анализ потоков")
-
-    option = st.radio("Источник данных:", ["JSON текст", "Загрузить JSON файл"])
-
-    flows_data = None
-    if option == "JSON текст":
-        json_text = st.text_area("Вставьте JSON с потоками:", height=200,
-            value='[{"packet_count": 25, "total_bytes": 3200, "mean_packet_size": 350, "std_packet_size": 45, "min_packet_size": 40, "max_packet_size": 1400, "flow_duration_sec": 28.0, "mean_inter_arrival_time": 0.75, "std_inter_arrival_time": 0.45, "syn_count": 2, "ack_count": 18, "fin_count": 2, "rst_count": 0, "psh_count": 8, "urg_count": 0, "mean_ttl": 120, "mean_window_size": 65000, "payload_bytes_total": 2100, "protocol": "TCP"}]')
-        if json_text.strip():
-            try:
-                data = json.loads(json_text)
-                if isinstance(data, list):
-                    flows_data = pd.json_normalize(data)
-                else:
-                    flows_data = pd.DataFrame([data])
-                st.success(f"Загружено {len(flows_data)} потоков")
-            except Exception as e:
-                st.error(f"Ошибка парсинга JSON: {e}")
-    else:
-        uploaded = st.file_uploader("Выберите JSON файл", type=["json"])
-        if uploaded:
-            try:
-                data = json.loads(uploaded.read())
-                if isinstance(data, list):
-                    flows_data = pd.json_normalize(data)
-                else:
-                    flows_data = pd.DataFrame([data])
-                st.success(f"Загружено {len(flows_data)} потоков из файла")
-            except Exception as e:
-                st.error(f"Ошибка чтения файла: {e}")
-
-    if flows_data is not None and st.button("Запустить анализ", type="primary"):
+    if flows_data is not None and st.button("Запустить анализ", type="primary", key="batch_btn"):
         result = make_prediction(flows_data)
         if result:
-            st.markdown(f"### Результаты")
             st.metric("Всего потоков", result["total_flows"])
             col_r1, col_r2 = st.columns(2)
-            col_r1.metric("Норма", result["normal_count"], delta_color="off")
-            col_r2.metric("Аномалии", result["anomaly_count"], delta_color="off")
+            col_r1.metric("Норма", result["normal_count"])
+            col_r2.metric("Аномалии", result["anomaly_count"])
 
             rows = []
             for i, r in enumerate(result["results"]):
@@ -208,9 +219,9 @@ with tab3:
                 })
             st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
-            st.info("Графики на вкладке «Аналитика» показывают результаты verify.py (10 потоков). Запустите verify.py в консоли, чтобы обновить их.")
+    st.info("Графики на вкладке «Аналитика» можно обновить кнопкой «Сгенерировать графики» на той же вкладке. Они не обновляются при загрузке JSON.")
 
-with tab4:
+with tab3:
     st.header("Обучение моделей")
 
     st.markdown("""
@@ -229,9 +240,9 @@ with tab4:
         st.success(f"Обучение завершено! {len(X)} образцов, {sum(y == 0)} норма / {sum(y == 1)} аномалия")
         st.balloons()
         st.cache_resource.clear()
-        st.info("Модели перезагружены. Перейдите на вкладку «Предсказание» для проверки.")
+        st.info("Модели перезагружены. Перейдите на вкладку «Детектирование» для проверки.")
 
-with tab5:
+with tab4:
     st.header("О проекте")
 
     st.markdown("""
