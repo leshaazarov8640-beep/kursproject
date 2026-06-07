@@ -208,12 +208,7 @@ with tab3:
                 })
             st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
-            # Generate visualizations for this batch
-            viz = IDSVisualizer(output_dir=str(Path(__file__).parent.parent / "python-ml" / "visualizations"))
-            viz.plot_feature_bar_chart(flows_data, result)
-            viz.plot_anomaly_scores(result)
-            viz.plot_model_comparison(result)
-            st.success("Графики обновлены (вкладка Аналитика)")
+            st.info("Графики на вкладке «Аналитика» показывают результаты verify.py (10 потоков). Запустите verify.py в консоли, чтобы обновить их.")
 
 with tab4:
     st.header("Обучение моделей")
