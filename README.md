@@ -1,6 +1,6 @@
 # Курсовая работа по дисциплине «Методы и технологии программирования»
 
-**ФИО:** Студент **Группа:** 221331 **Вариант:** 3 — Система обнаружения вторжений (IDS) на основе машинного обучения
+**Вариант 3** — Система обнаружения вторжений (IDS) на основе машинного обучения
 
 ---
 
@@ -71,99 +71,106 @@
 
 ### Архитектура (C4 — уровень контейнеров)
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    ids-project                              │
-│                                                             │
-│  ┌──────────────────┐     ┌──────────────────────────┐      │
-│  │  Go Packet       │────>│  Python ML Module        │      │
-│  │  Capture Module  │     │  (FastAPI + scikit-learn) │      │
-│  │  (gopacket)      │     │                          │      │
-│  │                  │     │  ┌────────────────────┐  │      │
-│  │  live/file mode  │     │  │  IDSPredictor      │  │      │
-│  │  BPF filter      │     │  │  ───────────────   │  │      │
-│  │  Flow features   │     │  │  Random Forest      │  │      │
-│  │  JSON output     │     │  │  MLP Neural Net     │  │      │
-│  └──────────────────┘     │  │  Isolation Forest   │  │      │
-│                            │  │  Ensemble voting   │  │      │
-│                            │  └────────────────────┘  │      │
-│                            │                          │      │
-│                            │  ┌────────────────────┐  │      │
-│                            │  │  AlertNotifier     │  │      │
-│                            │  │  Telegram / Slack  │  │      │
-│                            │  └────────────────────┘  │      │
-│                            │                          │      │
-│                            │  ┌────────────────────┐  │      │
-│                            │  │  IDSVisualizer     │  │      │
-│                            │  │  matplotlib         │  │      │
-│                            │  └────────────────────┘  │      │
-│                            └──────────────────────────┘      │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+graph LR
+    Go[Go Packet Capture<br/>gopacket]
+    Python[Python ML Module<br/>FastAPI + scikit-learn]
+    Viz[Visualization<br/>matplotlib]
+    Alert[Alerts<br/>Telegram / Slack]
+    PCAP[PCAP File]
+
+    Go -->|JSON features| Python
+    PCAP --> Go
+    Python --> Viz
+    Python --> Alert
 ```
 
 ### Архитектура (модули backend)
 
+```mermaid
+graph TB
+    subgraph "python-ml"
+        Main[main.py<br/>CLI + FastAPI]
+        Parser[features/parser.py<br/>JSON load + feature engineering]
+        Train[model/train.py<br/>3 model training]
+        Predict[model/predict.py<br/>IDSPredictor + ensemble voting]
+        AlertMod[alerts/notifier.py<br/>Telegram / Slack / Console]
+        VizMod[visualization/dashboard.py<br/>matplotlib plots]
+    end
+    subgraph "go-pcap"
+        Capture[capture/capture.go<br/>packet capture]
+        Extract[features/extract.go<br/>feature extraction]
+        Output[output/output.go<br/>JSON output]
+    end
+    Capture --> Extract --> Output
+    Output --> Parser
+    Parser --> Predict
+    Train --> Predict
+    Predict --> AlertMod
+    Predict --> VizMod
 ```
-Python-ML Module:
-┌─────────────────────────────────────────────────────────┐
-│  main.py (CLI + FastAPI)                                │
-│  ┌──────────────────────────────────────────────────┐   │
-│  │  features/parser.py   → JSON загрузка, признаки  │   │
-│  │  model/train.py       → обучение 3 моделей       │   │
-│  │  model/predict.py     → IDSPredictor + voting    │   │
-│  │  alerts/notifier.py   → Telegram / Slack         │   │
-│  │  visualization/dashboard.py → matplotlib графики │   │
-│  └──────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────┘
 
-Go-PCAP Module:
-┌─────────────────────────────────────────────────────────┐
-│  main.go (CLI)                                          │
-│  ┌──────────────────────────────────────────────────┐   │
-│  │  capture/capture.go  → захват пакетов (live/pcap)│   │
-│  │  features/extract.go → извлечение признаков      │   │
-│  │  output/output.go    → вывод JSON                │   │
-│  └──────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────┘
-```
+### ER-диаграмма (структура FlowFeatures)
 
-### Схема данных
-
-```
-FlowFeatures (JSON):
-┌────────────────────────┐
-│  src_ip / dst_ip       │  IP-адреса источника и назначения
-│  src_port / dst_port   │  Порты
-│  protocol              │  TCP / UDP / ICMP / OTHER
-│  packet_count          │  Количество пакетов в окне
-│  total_bytes           │  Общий объём данных
-│  mean_packet_size      │  Средний размер пакета
-│  std_packet_size       │  Стандартное отклонение размера
-│  min/max_packet_size   │  Минимальный/максимальный размер
-│  flow_duration_sec     │  Длительность потока
-│  mean/std_inter_arrival│  Межпакетные интервалы
-│  syn/ack/fin/rst/psh/urg│ TCP-флаги
-│  mean_ttl              │  Средний TTL
-│  mean_window_size      │  Средний размер TCP-окна
-│  payload_bytes_total   │  Общий объём полезной нагрузки
-└────────────────────────┘
+```mermaid
+erDiagram
+    FLOW_FEATURES {
+        string src_ip PK
+        string dst_ip PK
+        int src_port PK
+        int dst_port PK
+        string protocol
+        int packet_count
+        int total_bytes
+        float mean_packet_size
+        float std_packet_size
+        int min_packet_size
+        int max_packet_size
+        float flow_duration_sec
+        float mean_inter_arrival_time
+        float std_inter_arrival_time
+        int syn_count
+        int ack_count
+        int fin_count
+        int rst_count
+        int psh_count
+        int urg_count
+        float mean_ttl
+        float mean_window_size
+        int payload_bytes_total
+        string label
+        float score
+    }
 ```
 
 ### Последовательность анализа
 
-```
-Go Capture                    Python ML
-     │                            │
-     │─── захват пакетов ────────>│
-     │─── извлечение признаков ──>│
-     │─── JSON с фичами ────────>│
-     │                            │─── загрузка моделей (.pkl)
-     │                            │─── масштабирование (StandardScaler)
-     │                            │─── предсказание (RF + MLP + IF)
-     │                            │─── ensemble voting (≥2 = аномалия)
-     │                            │─── алерт (Telegram/Slack)
-     │                            │─── визуализация (графики)
-     │<── результат ─────────────│
+```mermaid
+sequenceDiagram
+    participant Go as Go Capture
+    participant Py as Python ML
+    participant RF as Random Forest
+    participant MLP as MLP Neural Net
+    participant IF as Isolation Forest
+
+    Go->>Py: JSON with 19 flow features
+    Py->>Py: StandardScaler transform
+    par Ensemble inference
+        Py->>RF: predict()
+        RF-->>Py: 0 (normal) / 1 (anomaly)
+    and
+        Py->>MLP: predict()
+        MLP-->>Py: 0 (normal) / 1 (anomaly)
+    and
+        Py->>IF: predict()
+        IF-->>Py: -1 (anomaly) / 1 (normal)
+    end
+    Py->>Py: majority vote (>=2 models = anomaly)
+    alt anomaly detected
+        Py->>Py: send Telegram / Slack alert
+    end
+    Py->>Py: generate matplotlib visualizations
+    Py-->>Go: prediction result
 ```
 
 ---
@@ -307,21 +314,26 @@ Swagger UI: [http://localhost:8000/docs](http://localhost:8000/docs)
 ### Стратегия тестирования
 
 - **Изоляция:** каждый тестовый класс использует `tempfile.TemporaryDirectory` для изолированного обучения моделей.
-- **БД:** не используется (модели сохраняются в .pkl файлы).
 - **Mock:** алерты без API-ключей проверяют форматирование без реальной отправки.
 - **Графики:** проверяется создание файлов PNG в временной директории.
 
-### Результаты тестирования
+### Запуск тестов
+
+```bash
+cd python-ml
+pytest tests/ -v
+```
+
+Результат:
 
 ```
-$ pytest tests/ -v
 collected 45 items
-tests/test_alerts.py .........                                       [ 20%]
-tests/test_integration.py ..........                                 [ 42%]
-tests/test_model.py .....                                            [ 53%]
-tests/test_parser.py ...............                                 [ 86%]
-tests/test_visualization.py ......                                   [100%]
-======== 45 passed in 7.02s =========
+tests/test_model.py .....                                            [ 11%]
+tests/test_parser.py ...............                                 [ 44%]
+tests/test_alerts.py .........                                       [ 64%]
+tests/test_visualization.py ......                                   [ 77%]
+tests/test_integration.py ..........                                 [100%]
+============= 45 passed in 7.02s =============
 ```
 
 ### Результаты детекции
