@@ -1,0 +1,27 @@
+[
+  {
+    "src_ip": "10.0.0.5",
+    "dst_ip": "192.168.1.1",
+    "src_port": 54321,
+    "dst_port": 80,
+    "protocol": "TCP",
+    "packet_count": 1500,
+    "total_bytes": 80000,
+    "mean_packet_size": 55,
+    "std_packet_size": 8,
+    "min_packet_size": 40,
+    "max_packet_size": 80,
+    "flow_duration_sec": 1.5,
+    "mean_inter_arrival_time": 0.001,
+    "std_inter_arrival_time": 0.0005,
+    "syn_count": 1200,
+    "ack_count": 3,
+    "fin_count": 0,
+    "rst_count": 0,
+    "psh_count": 0,
+    "urg_count": 0,
+    "mean_ttl": 64,
+    "mean_window_size": 1024,
+    "payload_bytes_total": 100
+  }
+]

@@ -6,6 +6,7 @@
 """
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -15,6 +16,15 @@ from features.parser import prepare_features
 from model.train import generate_training_data, train_models
 from model.predict import IDSPredictor
 from visualization.dashboard import IDSVisualizer
+from alerts.notifier import AlertNotifier
+
+# Load .env if exists
+dotenv_path = Path(__file__).parent / ".env"
+if dotenv_path.exists():
+    for line in dotenv_path.read_text(encoding="utf-8").strip().splitlines():
+        if "=" in line and not line.startswith("#"):
+            k, v = line.split("=", 1)
+            os.environ.setdefault(k.strip(), v.strip())
 
 
 def print_separator(title: str):
@@ -291,6 +301,18 @@ def main():
     print(f"\n  Итого: {predictions['normal_count']} норма / {predictions['anomaly_count']} аномалия")
     print(f"  Соотношение: {predictions['normal_count'] / predictions['total_flows'] * 100:.0f}% / "
           f"{predictions['anomaly_count'] / predictions['total_flows'] * 100:.0f}%")
+
+    # 4b. Telegram alerts for each anomaly
+    if predictions["anomaly_count"] > 0 and os.getenv("TELEGRAM_BOT_TOKEN"):
+        notifier = AlertNotifier()
+        sent = 0
+        for i, flow in enumerate(test_flows):
+            r = predictions["results"][i]
+            if r["is_anomaly"]:
+                alert_data = {**flow, "anomaly_score": r["anomaly_score"]}
+                notifier.send_alert(alert_data)
+                sent += 1
+        print(f"\n  Telegram-алертов отправлено: {sent}")
 
     # 5. Генерация графиков
     print("\n[4/4] Генерация графиков...")

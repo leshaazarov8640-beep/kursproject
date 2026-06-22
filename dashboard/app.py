@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -11,6 +12,15 @@ from model.predict import IDSPredictor
 from features.parser import prepare_features
 from model.train import generate_training_data, train_models
 from visualization.dashboard import IDSVisualizer
+from alerts.notifier import AlertNotifier
+
+# Load .env if exists
+dotenv_path = Path(__file__).parent.parent / "python-ml" / ".env"
+if dotenv_path.exists():
+    for line in dotenv_path.read_text(encoding="utf-8").strip().splitlines():
+        if "=" in line and not line.startswith("#"):
+            k, v = line.split("=", 1)
+            os.environ.setdefault(k.strip(), v.strip())
 
 st.set_page_config(
     page_title="IDS — система обнаружения вторжений",
@@ -198,6 +208,8 @@ with tab2:
             col_m2.metric("MLP Neural Net", "Аномалия" if r["mlp_prediction"] else "Норма",
                           delta=f"{r['mlp_confidence']:.0%}" if r["mlp_confidence"] else None)
             col_m3.metric("Isolation Forest", "Аномалия" if r["iso_forest_prediction"] else "Норма")
+            if r["is_anomaly"] and os.getenv("TELEGRAM_BOT_TOKEN"):
+                AlertNotifier().send_alert({**single_flow, "anomaly_score": r["anomaly_score"]})
 
     if flows_data is not None and st.button("Запустить анализ", type="primary", key="batch_btn"):
         result = make_prediction(flows_data)
